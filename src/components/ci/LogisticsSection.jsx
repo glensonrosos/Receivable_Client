@@ -78,8 +78,8 @@ const LogisticsSection = ({ ci, onUpdate, canEdit, onViewHistory, isAdmin = fals
   }, [canEdit]);
 
   const calculateDueDate = () => {
-    if (!formData.shipDate || !formData.terms) return null;
-    const dueDate = new Date(formData.shipDate);
+    if (!formData.uploadDate || !formData.terms) return null;
+    const dueDate = new Date(formData.uploadDate);
     dueDate.setDate(dueDate.getDate() + formData.terms);
     return dueDate;
   };
@@ -369,7 +369,14 @@ const LogisticsSection = ({ ci, onUpdate, canEdit, onViewHistory, isAdmin = fals
                 value={dueDate ? dueDate.toLocaleDateString() : 'N/A'}
                 InputProps={{ readOnly: true }}
                 disabled
-                helperText="Calculated: Ship Date + Terms"
+                sx={(theme) => ({
+                  '& .MuiInputBase-input': {
+                    color: theme.palette.error.main,
+                    WebkitTextFillColor: theme.palette.error.main,
+                    fontWeight: 700
+                  }
+                })}
+                helperText="Calculated: Upload Date + Terms"
               />
             </Grid>
 
