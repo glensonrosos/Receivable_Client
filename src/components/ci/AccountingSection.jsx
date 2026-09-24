@@ -343,10 +343,8 @@ const AccountingSection = ({ ci, onInitialize, onUpdate, canEdit, isInitialized 
   const pendingDeductions = ci?.pendingDeductions || 0;
   const netAmount = ci?.netAmount || 0;
   const varianceAmount = ci?.varianceAmount || 0;
-  const outstandingBalance = ci?.outstandingBalance || 0;
-  const effectiveCanEdit = canEdit && formData.accountingStatus !== 'Waiting to Due';
+  const effectiveCanEdit = canEdit;
   const allowEditPercentage = canEdit && (ci?.accountingStatus !== 'CLOSED');
-  const dueDateStr = ci?.dueDate ? new Date(ci.dueDate).toLocaleDateString() : null;
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -403,13 +401,6 @@ const AccountingSection = ({ ci, onInitialize, onUpdate, canEdit, isInitialized 
             />
           </Stack>
         </Box>
-
-        {formData.accountingStatus === 'Waiting to Due' && (
-          <Alert severity="info" sx={{ mb: 2 }}>
-            Editing is locked because status is Waiting to Due.
-            {dueDateStr ? ` It will unlock and switch to Ready for Collection on or after the Due Date (${dueDateStr}).` : ''}
-          </Alert>
-        )}
 
         <Divider sx={{ mb: 3 }} />
 
@@ -625,23 +616,6 @@ const AccountingSection = ({ ci, onInitialize, onUpdate, canEdit, isInitialized 
               />
             </Grid>
 
-            {/* Outstanding Balance */}
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Outstanding Balance (USD)"
-                value={formatCurrency(outstandingBalance)}
-                InputProps={{ readOnly: true }}
-                helperText="Net Amount - Actual Payment"
-                sx={{
-                  '& .MuiInputBase-input': {
-                    color: outstandingBalance > 0 ? 'error.main' : 'success.main',
-                    fontWeight: 'medium'
-                  }
-                }}
-              />
-            </Grid>
-
             {/* Accounting Remarks */}
             <Grid item xs={12}>
               <TextField
@@ -673,9 +647,7 @@ const AccountingSection = ({ ci, onInitialize, onUpdate, canEdit, isInitialized 
             {!effectiveCanEdit && (
               <Grid item xs={12}>
                 <Alert severity="info">
-                  {formData.accountingStatus === 'Waiting to Due'
-                    ? 'You have view only because status is Waiting to Due.'
-                    : 'You have view-only access to the Accounting section.'}
+                  You have view-only access to the Accounting section.
                 </Alert>
               </Grid>
             )}

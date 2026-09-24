@@ -71,6 +71,8 @@ const Dashboard = () => {
   const [shipDateTo, setShipDateTo] = useState(null);
   const [ciDateFrom, setCiDateFrom] = useState(null);
   const [ciDateTo, setCiDateTo] = useState(null);
+  const [uploadDateFrom, setUploadDateFrom] = useState(null);
+  const [uploadDateTo, setUploadDateTo] = useState(null);
   // Legend counts for accounting statuses (respect current filters)
   const [legendCounts, setLegendCounts] = useState({
     waiting: 0,
@@ -88,7 +90,7 @@ const Dashboard = () => {
     fetchCIs();
     fetchLegend();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paginationModel.page, paginationModel.pageSize, sortModel, search, buyerId, logisticsStatus, accountingStatus, shipDateFrom, shipDateTo, ciDateFrom, ciDateTo]);
+  }, [paginationModel.page, paginationModel.pageSize, sortModel, search, buyerId, logisticsStatus, accountingStatus, shipDateFrom, shipDateTo, ciDateFrom, ciDateTo, uploadDateFrom, uploadDateTo]);
 
   // Auto-refresh every 10 minutes; restarts when dependencies change to use latest filters/sort
   useEffect(() => {
@@ -98,7 +100,7 @@ const Dashboard = () => {
     }, 600000); // 10 minutes
     return () => clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paginationModel.page, paginationModel.pageSize, sortModel, search, buyerId, logisticsStatus, accountingStatus, shipDateFrom, shipDateTo, ciDateFrom, ciDateTo]);
+  }, [paginationModel.page, paginationModel.pageSize, sortModel, search, buyerId, logisticsStatus, accountingStatus, shipDateFrom, shipDateTo, ciDateFrom, ciDateTo, uploadDateFrom, uploadDateTo]);
 
   const fetchBuyers = async () => {
     try {
@@ -156,7 +158,10 @@ const Dashboard = () => {
     navigate('/change-password');
   };
 
+  const canCreateCI = user?.role === 'Admin' || user?.role === 'Logistics';
+
   const handleOpenCreateCI = () => {
+    if (!canCreateCI) return;
     setCreateCIDialogOpen(true);
   };
 
@@ -207,6 +212,8 @@ const Dashboard = () => {
         shipDateTo: fmt(shipDateTo),
         ciDateFrom: fmt(ciDateFrom),
         ciDateTo: fmt(ciDateTo),
+        uploadDateFrom: fmt(uploadDateFrom),
+        uploadDateTo: fmt(uploadDateTo),
         sortBy: sort.field,
         sortDir: sort.sort === 'asc' ? 'asc' : 'desc'
       };
@@ -220,6 +227,7 @@ const Dashboard = () => {
         poNumber: ci.poNumber,
         shipDate: ci.shipDate || null,
         ciDate: ci.ciDate || null,
+        uploadDate: ci.uploadDate || null,
         logisticsAmountDue: ci.logisticsAmountDue || 0,
         logisticsStatus: ci.logisticsStatus,
         actualPayment: ci.actualPayment || 0,
@@ -303,7 +311,15 @@ const Dashboard = () => {
   const handleExportAllXlsx = async () => {
     try {
       setExportingAllXlsx(true);
-      const fmtDate = (d) => (d ? new Date(d).toISOString().split('T')[0] : '');
+      const fmtDate = (d) => {
+        if (!d) return '';
+        const date = new Date(d);
+        if (Number.isNaN(date.getTime())) return '';
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
       const buyerName = buyers.find(b => b._id === buyerId)?.buyerName || '';
       const sort = sortModel && sortModel[0] ? sortModel[0] : { field: 'ciNumber', sort: 'desc' };
 
@@ -345,6 +361,8 @@ const Dashboard = () => {
         ['Ship Date To', shipDateTo ? fmtDate(shipDateTo) : ''],
         ['CI Date From', ciDateFrom ? fmtDate(ciDateFrom) : ''],
         ['CI Date To', ciDateTo ? fmtDate(ciDateTo) : ''],
+        ['Upload Date From', uploadDateFrom ? fmtDate(uploadDateFrom) : ''],
+        ['Upload Date To', uploadDateTo ? fmtDate(uploadDateTo) : ''],
         ['Sort', `${sort.field} ${sort.sort}`],
         ['Total Exported Rows', `${allItems.length}`],
         [],
@@ -355,6 +373,7 @@ const Dashboard = () => {
         'CI#',
         'Buyer',
         'PO#',
+        'Upload Date',
         'Ship Date',
         'CI Date',
         'Amount Due ($)',
@@ -405,6 +424,7 @@ const Dashboard = () => {
             { key: 'ci', width: 10 },
             { key: 'buyer', width: 24 },
             { key: 'po', width: 18 },
+            { key: 'upload', width: 14 },
             { key: 'ship', width: 14 },
             { key: 'ciDate', width: 14 },
             { key: 'due', width: 16 },
@@ -432,6 +452,7 @@ const Dashboard = () => {
               ci.ciNumber,
               (ci.buyer?.buyerName) || '',
               ci.poNumber || '',
+              ci.uploadDate ? fmtDate(ci.uploadDate) : '',
               ci.shipDate ? fmtDate(ci.shipDate) : '',
               ci.ciDate ? fmtDate(ci.ciDate) : '',
               due,
@@ -471,7 +492,7 @@ const Dashboard = () => {
           });
 
           // Totals row
-          const totalRow = ws.addRow(['Totals', '', '', '', '', sumDue, '', sumPaid, '', sumVar, '']);
+          const totalRow = ws.addRow(['Totals', '', '', '', '', '', sumDue, '', sumPaid, '', sumVar, '']);
           totalRow.font = { bold: true };
           totalRow.getCell(6).numFmt = currencyFmt;
           totalRow.getCell(8).numFmt = currencyFmt;
@@ -545,10 +566,10 @@ const Dashboard = () => {
         const sumPaid = allItems.reduce((acc, ci) => acc + (Number(ci.actualPayment || 0) / 100), 0);
         const sumVar = allItems.reduce((acc, ci) => acc + (Number(ci.actualPayment || 0) === 0 ? 0 : (Number(ci.varianceAmount || 0) / 100)), 0);
 
-        const data = [...header, ...tableHeader, ...tableRows, ['Totals', '', '', '', '', sumDue, '', sumPaid, '', sumVar, '']];
+        const data = [...header, ...tableHeader, ...tableRows, ['Totals', '', '', '', '', '', sumDue, '', sumPaid, '', sumVar, '']];
         const ws = XLSX.utils.aoa_to_sheet(data);
         ws['!cols'] = [
-          { wch: 10 }, { wch: 24 }, { wch: 18 }, { wch: 14 }, { wch: 14 },
+          { wch: 10 }, { wch: 24 }, { wch: 18 }, { wch: 14 }, { wch: 14 }, { wch: 14 },
           { wch: 16 }, { wch: 18 }, { wch: 18 }, { wch: 16 }, { wch: 18 }, { wch: 20 }
         ];
         const wb = XLSX.utils.book_new();
@@ -596,6 +617,8 @@ const Dashboard = () => {
         shipDateTo: fmt(shipDateTo),
         ciDateFrom: fmt(ciDateFrom),
         ciDateTo: fmt(ciDateTo),
+        uploadDateFrom: fmt(uploadDateFrom),
+        uploadDateTo: fmt(uploadDateTo),
         sortBy: sort.field,
         sortDir: sort.sort === 'asc' ? 'asc' : 'desc'
       };
@@ -622,6 +645,10 @@ const Dashboard = () => {
     { field: 'ciNumber', headerName: 'CI#', width: 110, sortable: true },
     { field: 'buyerName', headerName: 'Buyer', flex: 1, minWidth: 200, sortable: false },
     { field: 'poNumber', headerName: 'PO#', flex: 1, minWidth: 180, sortable: true },
+    { field: 'uploadDate', headerName: 'Upload Date', width: 150, renderCell: (params = {}) => {
+      const v = params?.row?.uploadDate;
+      return v ? new Date(v).toLocaleDateString() : '—';
+    } },
     { field: 'shipDate', headerName: 'Ship Date', width: 150, renderCell: (params = {}) => {
       const v = params?.row?.shipDate;
       return v ? new Date(v).toLocaleDateString() : '—';
@@ -673,14 +700,16 @@ const Dashboard = () => {
               </Box>
             </Box>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button
-                variant="contained"
-                color="success"
-                startIcon={<AddIcon />}
-                onClick={handleOpenCreateCI}
-              >
-                Create CI
-              </Button>
+              {canCreateCI && (
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<AddIcon />}
+                  onClick={handleOpenCreateCI}
+                >
+                  Create CI
+                </Button>
+              )}
               <Button
                 variant="outlined"
                 startIcon={<PasswordIcon />}
@@ -833,6 +862,22 @@ const Dashboard = () => {
                       slotProps={{ textField: { size: 'small', sx: { minWidth: 138 } } }}
                     />
                   </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2" sx={{ mr: 0.5, fontWeight: 600 }}>Upload Date</Typography>
+                    <DatePicker
+                      label="From"
+                      value={uploadDateFrom}
+                      onChange={(v) => { setUploadDateFrom(v); setPaginationModel(pm => ({ ...pm, page: 0 })); }}
+                      slotProps={{ textField: { size: 'small', sx: { minWidth: 138 } } }}
+                    />
+                    <Typography variant="body2" color="text.secondary">to</Typography>
+                    <DatePicker
+                      label="To"
+                      value={uploadDateTo}
+                      onChange={(v) => { setUploadDateTo(v); setPaginationModel(pm => ({ ...pm, page: 0 })); }}
+                      slotProps={{ textField: { size: 'small', sx: { minWidth: 138 } } }}
+                    />
+                  </Box>
                   <Button
                     size="small"
                     variant="outlined"
@@ -842,6 +887,8 @@ const Dashboard = () => {
                       setShipDateTo(null);
                       setCiDateFrom(null);
                       setCiDateTo(null);
+                      setUploadDateFrom(null);
+                      setUploadDateTo(null);
                       setPaginationModel(pm => ({ ...pm, page: 0 }));
                     }}
                     sx={{ whiteSpace: 'nowrap' }}
