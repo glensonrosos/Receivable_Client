@@ -22,6 +22,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { Save as SaveIcon, History as HistoryIcon } from '@mui/icons-material';
 import POAmountChangeDialog from './POAmountChangeDialog';
 import { buyerService } from '../../services/buyerService';
+import { termService } from '../../services/termService';
 
 const LogisticsSection = ({ ci, onUpdate, canEdit, onViewHistory, isAdmin = false }) => {
   const [formData, setFormData] = useState({
@@ -30,7 +31,7 @@ const LogisticsSection = ({ ci, onUpdate, canEdit, onViewHistory, isAdmin = fals
     shipDate: null,
     ciDate: null,
     uploadDate: null,
-    terms: 30,
+    terms: '',
     poAmount: 0,
     logisticsDeduction: 0,
     logisticsRemarks: '',
@@ -39,6 +40,7 @@ const LogisticsSection = ({ ci, onUpdate, canEdit, onViewHistory, isAdmin = fals
   const [poAmountDialogOpen, setPOAmountDialogOpen] = useState(false);
   const [errors, setErrors] = useState({});
   const [buyers, setBuyers] = useState([]);
+  const [terms, setTerms] = useState([]);
   // Snackbar
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMsg, setSnackbarMsg] = useState('');
@@ -56,7 +58,7 @@ const LogisticsSection = ({ ci, onUpdate, canEdit, onViewHistory, isAdmin = fals
         shipDate: ci.shipDate ? new Date(ci.shipDate) : null,
         ciDate: ci.ciDate ? new Date(ci.ciDate) : null,
         uploadDate: ci.uploadDate ? new Date(ci.uploadDate) : null,
-        terms: ci.terms || 30,
+        terms: ci.terms || '',
         poAmount: ci.poAmount / 100 || 0,
         logisticsDeduction: ci.logisticsDeduction / 100 || 0,
         logisticsRemarks: ci.logisticsRemarks || '',
@@ -64,6 +66,18 @@ const LogisticsSection = ({ ci, onUpdate, canEdit, onViewHistory, isAdmin = fals
       });
     }
   }, [ci]);
+
+  useEffect(() => {
+    const fetchTerms = async () => {
+      try {
+        const res = await termService.getAllTerms();
+        setTerms(res.data.terms || []);
+      } catch (e) {
+        // ignore
+      }
+    };
+    if (canEdit) fetchTerms();
+  }, [canEdit]);
 
   useEffect(() => {
     const fetchBuyers = async () => {
@@ -356,9 +370,14 @@ const LogisticsSection = ({ ci, onUpdate, canEdit, onViewHistory, isAdmin = fals
                 error={!!errors.terms}
                 helperText={errors.terms}
               >
-                <MenuItem value={30}>30</MenuItem>
-                <MenuItem value={60}>60</MenuItem>
-                <MenuItem value={90}>90</MenuItem>
+                {terms.map((term) => (
+                  <MenuItem key={term._id} value={term.termDays}>
+                    {term.termLabel} ({term.termDays} days)
+                  </MenuItem>
+                ))}
+                {formData.terms && !terms.some((term) => term.termDays === Number(formData.terms)) && (
+                  <MenuItem value={formData.terms}>{formData.terms} days (current)</MenuItem>
+                )}
               </TextField>
             </Grid>
 

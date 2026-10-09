@@ -36,6 +36,7 @@ import {
   People as PeopleIcon,
   Business as BusinessIcon,
   Percent as PercentIcon,
+  Schedule as ScheduleIcon,
   Add as AddIcon,
   Download as DownloadIcon
 } from '@mui/icons-material';
@@ -763,6 +764,13 @@ const Dashboard = () => {
                       onClick={() => navigate('/admin/email-settings')}
                     >
                       Email Settings
+                    </Button>
+                    <Button
+                      variant="contained"
+                      startIcon={<ScheduleIcon />}
+                      onClick={() => navigate('/admin/terms')}
+                    >
+                      Terms Management
                     </Button>
                   </Box>
                 </AccordionDetails>
