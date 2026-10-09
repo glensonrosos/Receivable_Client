@@ -10,6 +10,7 @@ import BuyerManagement from './pages/BuyerManagement';
 import DeductionManagement from './pages/DeductionManagement';
 import CIDetail from './pages/CIDetail';
 import EmailSettings from './pages/EmailSettings';
+import TermManagement from './pages/TermManagement';
 
 const theme = createTheme({
   palette: {
@@ -90,6 +91,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['Admin']}>
                 <EmailSettings />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/terms"
+            element={
+              <ProtectedRoute allowedRoles={['Admin']}>
+                <TermManagement />
               </ProtectedRoute>
             }
           />
