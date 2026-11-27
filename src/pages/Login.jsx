@@ -113,7 +113,7 @@ const Login = () => {
                   <LockIcon />
                 </Box>
                 <Typography variant="h6" component="h6" gutterBottom sx={{ fontWeight: 500, letterSpacing: 1 }}>
-                  ACCOUNT RECEIVABLE MONITORING
+                  PEBA TANDEM -RECEIVABLE MONITORING
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
                   Sign in to continue

@@ -690,10 +690,10 @@ const Dashboard = () => {
         <Paper sx={{ p: 4 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <ReceiptIcon color="success" sx={{ fontSize: 40 }} />
+              <ReceiptIcon color="info" sx={{ fontSize: 40 }} />
               <Box>
                 <Typography variant="h4" component="h1">
-                  Account Receivable Monitoring
+                  PEBA Tandem -Receivable Monitoring
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Welcome back, {user?.firstName} {user?.lastName}
